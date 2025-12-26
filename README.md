@@ -30,7 +30,7 @@ cp .env.example .env
 
 ```env
 # Solana 钱包助记词（24个单词）
-SOLANA_MNEMONIC=your fucking 24 words mnemonic phrase here
+SOLANA_MNEMONIC=Put your fucking 24 words mnemonic phrase here
 
 # Jupiter API Key (从 https://portal.jup.ag/api-keys 获取)
 JUP_API_KEY=your_jupiter_api_key
@@ -69,9 +69,7 @@ npm run start
 ```
 
 交互提示：
-1. 输入交易次数（默认 200 笔，最多 1000 笔）
-2. 输入每笔交易间隔（默认 3000ms）
-3. 确认后开始执行
+1. 输入交易次数（默认 200 笔，最多 1000 笔）确认后开始执行
 
 > ⚠️ **API 限制**：Jupiter API 限制 5 分钟 100 笔交易，默认 3 秒间隔可确保 200 笔交易在 10 分钟内安全完成。
 
