@@ -1,14 +1,16 @@
 # Seeker Trade
 
-Solana USDC/USDT 自动交换工具，使用 Jupiter API 进行交易。
+Solana USDC/USDT Auto Swap Bot，使用 Jupiter API。
 
 ## 功能特点
 
-- 🔄 支持 USDC ↔ USDT 双向交换
-- 📊 固定交易金额：0.001 USDC/USDT
-- 🚀 支持单次交换和批量交换模式
-- ⚡ 批量模式支持自定义交易次数和间隔
-- 🔐 安全的助记词管理
+- 支持 USDC ↔ USDT 双向交换
+- 固定交易金额：0.001 USDC/USDT
+- 支持单次交换和批量交换模式
+- 批量模式支持自定义交易次数
+- 优化tm的gas，在 .env 自己定义 SWAP_AMOUNT 就行了，默认已经是最低值
+- 预计单笔损耗：~$0.0007，200笔损耗 <$0.2
+
 
 ## 安装
 
@@ -80,8 +82,7 @@ npm run start
 | 环境变量 | 说明 | 默认值 |
 |---------|------|--------|
 | `SOLANA_MNEMONIC` | 钱包助记词（24词） | - |
-| `MNEMONIC` | 钱包助记词（备选） | - |
-| `JUP_API_KEY` | Jupiter API Key | - |
+| `JUP_API_KEY` | Jupiter API Key | `https://portal.jup.ag/dashboard` |
 | `RPC_URL` | Solana RPC 地址 | `https://api.mainnet-beta.solana.com` |
 | `PROXY_URL` | HTTP 代理地址 | - |
 | `SWAP_AMOUNT` | 每笔交易金额 (USDC/USDT) | `0.001` |
@@ -91,30 +92,11 @@ npm run start
 | `SWAP_DELAY_MS` | 交易间隔 (毫秒) | `3000` |
 | `SLIPPAGE_BPS` | 滑点 (基点, 50=0.5%) | `50` |
 
-## 项目结构
 
-```
-seeker-trade/
-├── src/
-│   ├── index.js      # 主入口，命令行处理
-│   ├── config.js     # 配置管理
-│   ├── wallet.js     # 钱包助记词处理
-│   ├── jupiter.js    # Jupiter API 集成
-│   └── swap.js       # 交换逻辑
-├── .env.example      # 环境变量示例
-├── .gitignore        # Git 忽略文件
-├── package.json      # 项目配置
-└── README.md         # 说明文档
-```
 
-## 注意事项
 
-1. 请确保钱包有足够的 SOL 余额支付交易费用
-2. 首次运行前建议先小额测试
-3. 批量交易时注意 RPC 限流
-4. 建议使用私有 RPC 节点以获得更好的性能
 
 ## License
 
-MIT
+没有的兄弟，没有的
 

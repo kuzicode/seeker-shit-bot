@@ -36,9 +36,13 @@ function prompt(rl, question) {
  * @param {Keypair} keypair - Wallet keypair
  */
 async function printBalance(connection, keypair) {
-  const balance = await connection.getBalance(keypair.publicKey);
-  const solBalance = balance / 1e9;
-  console.log(`💰 SOL Balance: ${solBalance.toFixed(4)} SOL`);
+  try {
+    const balance = await connection.getBalance(keypair.publicKey);
+    const solBalance = balance / 1e9;
+    console.log(`💰 SOL Balance: ${solBalance.toFixed(4)} SOL`);
+  } catch (e) {
+    console.log(`💰 SOL Balance: (unable to fetch)`);
+  }
 }
 
 /**
@@ -111,30 +115,26 @@ async function main() {
     }
   } else {
     // Batch mode - interactive
-    console.log('\n📌 Mode: Batch (Interactive) - USDC ↔ USDT');
+    console.log('\n📌 Mode: Batch - USDC ↔ USDT');
     console.log('─'.repeat(50));
     
     const rl = createReadlineInterface();
     
     try {
-      // Ask for number of swaps
+      // Ask for number of swaps only
       const countInput = await prompt(
         rl,
-        `\n🔢 Enter number of swaps (default: ${config.batchCount}, max: 1000): `
+        `\n🔢 Enter number of swaps (default: ${config.batchCount}): `
       );
+      
+      rl.close();
       
       let count = parseInt(countInput) || config.batchCount;
       count = Math.min(Math.max(count, 1), 1000); // Clamp between 1 and 1000
       
-      // Ask for delay
-      const delayInput = await prompt(
-        rl,
-        `⏱️  Enter delay between swaps in ms (default: ${config.swapDelayMs}, API limit: 100tx/5min): `
-      );
+      const delay = config.swapDelayMs;
       
-      const delay = parseInt(delayInput) || config.swapDelayMs;
-      
-      // Confirm
+      // Show configuration
       const priorityFeeDisplay = config.priorityFeeLamports > 0 
         ? `${config.priorityFeeLamports} lamports` 
         : 'auto';
@@ -147,16 +147,6 @@ async function main() {
       console.log(`   - Max retries: ${config.maxRetries}`);
       console.log(`   - Slippage: ${config.slippageBps / 100}%`);
       
-      const confirm = await prompt(rl, '\n🚀 Start batch swaps? (y/N): ');
-      
-      if (confirm.toLowerCase() !== 'y') {
-        console.log('❌ Cancelled by user');
-        rl.close();
-        process.exit(0);
-      }
-      
-      rl.close();
-      
       // Execute batch swaps
       await executeBatchSwaps(keypair, connection, count, delay);
       
@@ -166,7 +156,6 @@ async function main() {
       
       console.log('\n🎉 All done!');
     } catch (error) {
-      rl.close();
       console.error(`\n❌ Error: ${error.message}`);
       process.exit(1);
     }

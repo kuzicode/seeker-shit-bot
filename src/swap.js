@@ -20,8 +20,13 @@ import {
 export async function executeSwap(keypair, connection, direction) {
   const startTime = Date.now();
   
-  // Get balance before swap for gas calculation
-  const balanceBefore = await connection.getBalance(keypair.publicKey);
+  // Get balance before swap for gas calculation (optional, don't fail if it errors)
+  let balanceBefore = null;
+  try {
+    balanceBefore = await connection.getBalance(keypair.publicKey);
+  } catch (e) {
+    // Ignore balance fetch error, gas calculation will be skipped
+  }
   
   // Determine input/output tokens
   const isUsdcToUsdt = direction === 'USDC_TO_USDT';
@@ -76,8 +81,9 @@ export async function executeSwap(keypair, connection, direction) {
   // Get balance after swap for gas calculation
   let gasUsed = 0;
   try {
-    const balanceAfter = await connection.getBalance(keypair.publicKey);
-    gasUsed = balanceBefore - balanceAfter;
+    if (balanceBefore !== null) {
+      const balanceAfter = await connection.getBalance(keypair.publicKey);
+      gasUsed = balanceBefore - balanceAfter;
     const gasUsedSol = gasUsed / 1e9;
     
     // Get SOL price for USD conversion
@@ -95,6 +101,9 @@ export async function executeSwap(keypair, connection, direction) {
       // Failed to get price, show without USD
     }
     console.log(gasDisplay);
+    } else {
+      console.log(`⛽ Gas used: (unable to calculate)`);
+    }
   } catch (e) {
     console.log(`⛽ Gas used: (unable to fetch)`);
   }
