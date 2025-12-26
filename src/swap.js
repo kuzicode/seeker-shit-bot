@@ -89,27 +89,37 @@ export async function executeSwap(keypair, connection, direction) {
   
   // Get balance after swap for gas calculation
   let gasUsed = 0;
+  let isRentPayment = false;
   try {
     if (balanceBefore !== null) {
       const balanceAfter = await connection.getBalance(keypair.publicKey);
       gasUsed = balanceBefore - balanceAfter;
-    const gasUsedSol = gasUsed / 1e9;
-    
-    // Get SOL price for USD conversion
-    let gasDisplay = `⛽ Gas used: ${gasUsedSol.toFixed(6)} SOL`;
-    try {
-      const solQuote = await getQuote(
-        'So11111111111111111111111111111111111111112', // SOL
-        TOKENS.USDC,
-        1e9 // 1 SOL
-      );
-      const solPriceUsdc = parseInt(solQuote.outAmount) / 1e6;
-      const gasUsdc = gasUsedSol * solPriceUsdc;
-      gasDisplay += ` (~$${gasUsdc.toFixed(4)})`;
-    } catch (e) {
-      // Failed to get price, show without USD
-    }
-    console.log(gasDisplay);
+      const gasUsedSol = gasUsed / 1e9;
+      
+      // Check if this includes rent (Token Account creation costs ~0.002 SOL)
+      // Normal swap gas is typically < 0.0005 SOL
+      if (gasUsedSol > 0.001) {
+        isRentPayment = true;
+        console.log(`⛽ Gas used: ${gasUsedSol.toFixed(6)} SOL (includes rent for Token Account creation)`);
+        // Set gasUsed to 0 so it won't be counted in statistics
+        gasUsed = 0;
+      } else {
+        // Get SOL price for USD conversion
+        let gasDisplay = `⛽ Gas used: ${gasUsedSol.toFixed(6)} SOL`;
+        try {
+          const solQuote = await getQuote(
+            'So11111111111111111111111111111111111111112', // SOL
+            TOKENS.USDC,
+            1e9 // 1 SOL
+          );
+          const solPriceUsdc = parseInt(solQuote.outAmount) / 1e6;
+          const gasUsdc = gasUsedSol * solPriceUsdc;
+          gasDisplay += ` (~$${gasUsdc.toFixed(4)})`;
+        } catch (e) {
+          // Failed to get price, show without USD
+        }
+        console.log(gasDisplay);
+      }
     } else {
       console.log(`⛽ Gas used: (unable to calculate)`);
     }
@@ -127,6 +137,7 @@ export async function executeSwap(keypair, connection, direction) {
     outputAmount: expectedOutput,
     outputToken,
     gasUsed,
+    isRentPayment,
     duration,
     success: true,
   };
@@ -212,10 +223,10 @@ export async function executeBatchSwaps(keypair, connection, targetCount, delayM
     }
   }
   
-  // Calculate total gas used
-  const totalGasUsed = results
-    .filter(r => r.success && r.gasUsed)
-    .reduce((sum, r) => sum + r.gasUsed, 0);
+  // Calculate total gas used (exclude rent payments)
+  const swapResults = results.filter(r => r.success && r.gasUsed && !r.isRentPayment);
+  const rentPayments = results.filter(r => r.success && r.isRentPayment).length;
+  const totalGasUsed = swapResults.reduce((sum, r) => sum + r.gasUsed, 0);
   const totalGasSol = totalGasUsed / 1e9;
   
   // Get SOL price in USDC
@@ -241,26 +252,31 @@ export async function executeBatchSwaps(keypair, connection, targetCount, delayM
   console.log(`❌ Failed (after retries): ${totalFailures}`);
   console.log(`📈 Total attempts: ${totalAttempts}`);
   
-  if (solPriceUsdc) {
+  // Show rent payment info if any
+  if (rentPayments > 0) {
+    console.log(`🏠 Token Account rent payments: ${rentPayments} (excluded from gas stats)`);
+  }
+  
+  const swapCount = swapResults.length;
+  if (solPriceUsdc && swapCount > 0) {
     const totalGasUsdc = totalGasSol * solPriceUsdc;
-    console.log(`⛽ Total gas used: ${totalGasSol.toFixed(6)} SOL (~$${totalGasUsdc.toFixed(4)})`);
-    if (successCount > 0) {
-      const avgGasSol = totalGasSol / successCount;
-      const avgGasUsdc = totalGasUsdc / successCount;
-      console.log(`⛽ Avg gas per swap: ${avgGasSol.toFixed(6)} SOL (~$${avgGasUsdc.toFixed(4)})`);
-    }
+    console.log(`⛽ Total gas used: ${totalGasSol.toFixed(6)} SOL (~$${totalGasUsdc.toFixed(4)}) [${swapCount} swaps]`);
+    const avgGasSol = totalGasSol / swapCount;
+    const avgGasUsdc = totalGasUsdc / swapCount;
+    console.log(`⛽ Avg gas per swap: ${avgGasSol.toFixed(6)} SOL (~$${avgGasUsdc.toFixed(4)})`);
+  } else if (swapCount > 0) {
+    console.log(`⛽ Total gas used: ${totalGasSol.toFixed(6)} SOL [${swapCount} swaps]`);
+    console.log(`⛽ Avg gas per swap: ${(totalGasSol / swapCount).toFixed(6)} SOL`);
   } else {
-    console.log(`⛽ Total gas used: ${totalGasSol.toFixed(6)} SOL`);
-    if (successCount > 0) {
-      console.log(`⛽ Avg gas per swap: ${(totalGasSol / successCount).toFixed(6)} SOL`);
-    }
+    console.log(`⛽ Gas stats: (no data available)`);
   }
   
   return {
-    total: count,
+    total: targetCount,
     successful: successCount,
-    failed: failCount,
+    failed: totalFailures,
     totalGasUsed,
+    rentPayments,
     results,
   };
 }
