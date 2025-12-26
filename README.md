@@ -1,6 +1,6 @@
 # Seeker Trade
 
-Solana USDC/USDT Auto Swap Bot，使用 Jupiter API。
+Solana USDC/USDT Auto Swap Bot，power by Jupiter API。
 
 ## 功能特点
 
@@ -80,7 +80,7 @@ npm run start
 | 环境变量 | 说明 | 默认值 |
 |---------|------|--------|
 | `SOLANA_MNEMONIC` | 钱包助记词（24词） | - |
-| `JUP_API_KEY` | Jupiter API Key | `https://portal.jup.ag/dashboard` |
+| `JUP_API_KEY` | Jupiter API Key | - |
 | `RPC_URL` | Solana RPC 地址 | `https://api.mainnet-beta.solana.com` |
 | `PROXY_URL` | HTTP 代理地址 | - |
 | `SWAP_AMOUNT` | 每笔交易金额 (USDC/USDT) | `0.001` |
