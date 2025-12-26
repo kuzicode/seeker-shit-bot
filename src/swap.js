@@ -70,10 +70,19 @@ export async function executeSwap(keypair, connection, direction) {
   
   // Confirm transaction
   console.log('⏳ Confirming transaction...');
-  const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+  let confirmationError = null;
+  try {
+    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+    if (confirmation.value.err) {
+      confirmationError = `Transaction failed: ${JSON.stringify(confirmation.value.err)}`;
+    }
+  } catch (e) {
+    // Network error during confirmation - transaction may still have succeeded
+    console.log(`⚠️  Confirmation check failed (tx may still be successful): ${e.message}`);
+  }
   
-  if (confirmation.value.err) {
-    throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+  if (confirmationError) {
+    throw new Error(confirmationError);
   }
   
   const duration = Date.now() - startTime;
